@@ -3,32 +3,34 @@ import cv2
 import os
 import time
 import pytesseract
+import numpy as np
 from ctypes import windll
 from multiprocessing import Process
 from pynput import keyboard
+from typing import Dict, List, Tuple
 import pyautogui
 
-pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 currentPath = os.path.dirname(os.path.realpath(__file__))
-
+resoulution = (1920, 1080)
 #################################################### Help Functions ####################################################### 
         
-def ReadFromFile(fileName):
+def ReadFromFile(fileName: str):
     with open(fileName) as file:
         return file.read()
 
-def WriteToFile(fileName, input):
+def WriteToFile(fileName: str, input: str):
     with open(fileName, "w") as file:
         file.write(str(input))  
    
-def GetBoxes(lower, upper):
+def GetBoxes(lower: Tuple [int, int, int], upper: Tuple [int, int, int]):
     return pytesseract.image_to_data(cv2.inRange(Screenshot(), lower, upper), output_type='dict')   
    
-def GetCoordsFromBoxes(boxes, index):
+def GetCoordsFromBoxes(boxes: Dict[str, List[int]], index: int):
     x, y, w, h = (boxes['left'][index],boxes['top'][index],boxes['width'][index],boxes['height'][index],)
     return (x + w // 2, y + h // 2)   
    
-def GetCoordsFromDetection(image):
+def GetCoordsFromDetection(image: np.ndarray):
     result = cv2.matchTemplate(Screenshot(), image, cv2.TM_CCOEFF_NORMED) 
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
     x, y = max_loc
@@ -39,8 +41,8 @@ def Screenshot():
     
 ############################################################################################### Mouse and Keyboard ##############################################################################################################    
    
-MOUSEEVENTF_RIGHTDOWN = 0x0008 # right button down 
-MOUSEEVENTF_RIGHTUP = 0x0010 # right button up 
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
 MOUSEEVENTF_LEFTDOWN = 0x0002
 MOUSEEVENTF_LEFTUP = 0x0004
 MOUSEEVENTF_MOVE = 0x0001
@@ -56,9 +58,9 @@ def MouseClick():
     time.sleep(0.1)
     ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
    
-def MoveMouseTo(position):
-    x_normalized = int(65535 * (position[0] / 1920))
-    y_normalized = int(65535 * (position[1] / 1080))
+def MoveMouseTo(position: Tuple[int, int]):
+    x_normalized = int(65535 * (position[0] / resoulution[0]))
+    y_normalized = int(65535 * (position[1] / resoulution[1]))
     ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, x_normalized, y_normalized, 0, 0)   
     time.sleep(0.05)
    
@@ -77,10 +79,10 @@ def MouseMove(count:int):
   
 Keyboard: keyboard.Controller = keyboard.Controller()    
    
-def PressKey(key):
+def PressKey(key: str):
     Keyboard.press(key) 
 
-def On_press(key):
+def On_press(key: str):
     if any([key in z for z in [{keyboard.Key.shift, keyboard.KeyCode(char='+')}, {keyboard.Key.shift, keyboard.KeyCode(char='Ö')}]]):
         if ReadFromFile(currentPath + "\\stop.txt") == "0":
             WriteToFile(currentPath + "\\stop.txt", "1")
@@ -118,10 +120,11 @@ def DetectPosition():
  
 def DetectQuest():
     PressKey("l")
-    coords = GetCoordsFromDetection(cv2.imread("fiesta.png"))
+    baseCoords = GetCoordsFromDetection(cv2.imread(currentPath + "fiestaQuest.png"))
+    coords = (baseCoords[0] + 200, baseCoords[1] + 119)
     Click(coords)
     Click((coords[0], coords[1] + 45))
-    Click(GetCoordsFromDetection(cv2.imread("fiesta2.png")))
+    Click((baseCoords[0] + 75, baseCoords[1] + 540))
      
 def DetectQuestFinish():
     boxes = GetBoxes((120, 0, 0), (255, 30, 30))
@@ -157,15 +160,16 @@ def FinishedQuest():
     PressKey("l")
     for _ in range(5):
         if DetectQuestFinish():
-            Click(GetCoordsFromDetection(cv2.imread("fiesta3.png")))
+            coords = GetCoordsFromDetection(cv2.imread(currentPath + "fiestaQuest.png"))
+            Click((coords[0] + 70, coords[1] + 540))
             return True
         else:
             ScrollQuest()     
     return False
 
 def ScrollQuest():
-    coords = GetCoordsFromDetection(cv2.imread("fiesta4.png"))
-    Click((coords[0] + 342, coords[1] + 184), 7)
+    coords = GetCoordsFromDetection(cv2.imread(currentPath + "fiestaQuest.png"))
+    Click((coords[0] + 500, coords[1] + 235), 7)
 
 ############################################################################################### Start ##############################################################################################################
        
