@@ -15,8 +15,8 @@ resoulution = (1920, 1080)
 
 #################################################### Help Functions ####################################################### 
 
-def CheckPixelsAbove(image: np.ndarray, max_loc: Tuple[int, int], offset: int = 20) -> bool:
-    rows = image[max_loc[1]-1 - offset:max_loc[1]+ 2 - offset, :]
+def CheckPixelsAbove(image: np.ndarray, max_loc: Tuple[int, int], offset: int = 15) -> bool:
+    rows = image[max_loc[1]- 10 - offset:max_loc[1] - offset, max_loc[0] :max_loc[0] + 100]
     mask = cv2.inRange(cv2.cvtColor(rows, cv2.COLOR_RGB2BGR), (220, 220, 0), (255, 255, 5))
     return np.any(mask)
 
@@ -54,6 +54,9 @@ def GetCoordsFromDetectionChat(image: np.ndarray) -> Tuple[int, int]:
         return (x, y)
     else:
         return (0, 0)  
+
+def SaveImage(image: np.ndarray):
+    cv2.imwrite(currentPath + "\\screenshot.png", image)
 
 def Screenshot() -> np.ndarray:
     return cv2.cvtColor(np.array(pyautogui.screenshot().convert('RGB')), cv2.COLOR_RGB2BGR)
